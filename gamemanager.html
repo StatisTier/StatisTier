@@ -38,6 +38,7 @@
   <div class="container">
     <h2 class="text-center mb-4">Game Manager</h2>
 
+    <!-- Timer Controls -->
     <div class="text-center mb-4">
       <div id="timerDisplay">12:00</div>
       <select id="timerSelect" class="form-select mb-2" style="max-width: 150px; margin: 0 auto;">
@@ -51,21 +52,25 @@
       </div>
     </div>
 
+    <!-- Player Buttons -->
     <div class="mb-4 text-center">
-      <h5>Select Starting 5</h5>
+      <h5>Players</h5>
       <div id="playerButtons" class="d-flex flex-wrap justify-content-center"></div>
     </div>
 
+    <!-- Substitution -->
     <div class="text-center mb-4">
       <h5>Substitution</h5>
-      <button class="btn btn-primary" onclick="substitutePlayer()">Sub In / Out</button>
+      <button class="btn btn-primary" onclick="activateSubMode()">Sub In / Out</button>
     </div>
 
+    <!-- Stats Section -->
     <div class="text-center mb-4">
       <h5>Fouls & Turnovers</h5>
       <div id="statButtons" class="d-flex flex-wrap justify-content-center"></div>
     </div>
 
+    <!-- Timeouts -->
     <div class="text-center mb-3">
       <h5>Timeouts</h5>
       <button class="btn btn-warning mx-2" onclick="logTimeout('My Team')">My Team</button>
@@ -85,6 +90,7 @@
     let playerTimes = {};
     let fouls = {};
     let turnovers = {};
+    let subMode = false;
 
     function updateTimerDisplay() {
       const min = Math.floor(timeLeft / 60);
@@ -110,26 +116,24 @@
       isRunning = false;
     }
 
-    function togglePlayer(num) {
-      const idx = activePlayers.indexOf(num);
-      if (idx === -1) {
-        if (activePlayers.length >= 5) {
-          alert("Only 5 players allowed on court");
-          return;
-        }
-        activePlayers.push(num);
-        document.getElementById("btn-" + num).classList.add("btn-success");
-      } else {
-        activePlayers.splice(idx, 1);
-        document.getElementById("btn-" + num).classList.remove("btn-success");
-      }
-      updatePlayerInfo();
+    function activateSubMode() {
+      subMode = true;
     }
 
-    function substitutePlayer() {
-      const sub = prompt("Enter player number to sub in/out:");
-      const num = parseInt(sub);
-      if (!isNaN(num) && playerTimes.hasOwnProperty(num)) togglePlayer(num);
+    function togglePlayer(num) {
+      if (subMode) {
+        const idx = activePlayers.indexOf(num);
+        if (idx === -1) {
+          if (activePlayers.length >= 5) return;
+          activePlayers.push(num);
+          document.getElementById("btn-" + num).classList.add("btn-success");
+        } else {
+          activePlayers.splice(idx, 1);
+          document.getElementById("btn-" + num).classList.remove("btn-success");
+        }
+        updatePlayerInfo();
+        subMode = false;
+      }
     }
 
     function updatePlayerInfo() {
@@ -167,14 +171,11 @@
         value,
         clock: document.getElementById("timerDisplay").textContent
       };
-
       const form = new FormData();
       form.append("payload", JSON.stringify(payload));
 
-      fetch(API, {
-        method: "POST",
-        body: form
-      }).then(res => res.json())
+      fetch(API, { method: "POST", body: form })
+        .then(res => res.json())
         .then(() => console.log("✅ Logged to sheet:", payload))
         .catch(err => console.error("❌ Failed to log:", err));
     }
@@ -182,6 +183,7 @@
     function generateUI() {
       const playerContainer = document.getElementById("playerButtons");
       const statContainer = document.getElementById("statButtons");
+
       for (let i = 1; i <= 7; i++) {
         playerTimes[i] = 0;
         fouls[i] = 0;
