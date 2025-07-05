@@ -10,31 +10,40 @@
     .btn-block { width: 100%; margin-top: 10px; }
     .btn-group > button { margin: 6px; }
     .section { margin-top: 30px; }
+    .player-btn { margin: 4px; width: 100px; }
+    .active-player { border: 2px solid #000; font-weight: bold; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h3 class="text-center mb-4">Offensive Stats</h3>
+  <div class="container text-center">
+    <h3 class="mb-4">Offensive Stats</h3>
 
-    <!-- Player Name -->
-    <div class="mb-3">
-      <label for="playerName" class="form-label">Player Name</label>
-      <input type="text" id="playerName" class="form-control" placeholder="Enter player name" />
+    <!-- Player Selector -->
+    <div class="section">
+      <p class="mb-2">Select Player</p>
+      <div id="playerButtons">
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 1')">Player 1</button>
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 2')">Player 2</button>
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 3')">Player 3</button>
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 4')">Player 4</button>
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 5')">Player 5</button>
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 6')">Player 6</button>
+        <button class="btn btn-outline-dark player-btn" onclick="selectPlayer('Player 7')">Player 7</button>
+      </div>
+      <p class="mt-2 text-primary fw-bold" id="selectedPlayerLabel">No player selected</p>
     </div>
 
     <!-- Shot Attempt -->
-    <div class="section text-center">
+    <div class="section">
       <button id="shotAttemptBtn" class="btn btn-warning btn-block">Shot Attempt</button>
       <p class="mt-2 text-muted" id="shotStatus"></p>
 
-      <!-- Points -->
       <div class="btn-group">
         <button class="btn btn-outline-success" onclick="recordPoint(1)">+1</button>
         <button class="btn btn-outline-success" onclick="recordPoint(2)">+2</button>
         <button class="btn btn-outline-success" onclick="recordPoint(3)">+3</button>
       </div>
 
-      <!-- Misses -->
       <div class="btn-group">
         <button class="btn btn-outline-danger" onclick="recordMiss('Free Throw')">Free Throw</button>
         <button class="btn btn-outline-danger" onclick="recordMiss('2 Point')">2</button>
@@ -42,8 +51,8 @@
       </div>
     </div>
 
-    <!-- Other stats -->
-    <div class="section text-center">
+    <!-- Other Stats -->
+    <div class="section">
       <button class="btn btn-success btn-block" onclick="recordSimple('Assist')">Assist</button>
       <button class="btn btn-info btn-block" onclick="recordSimple('Offensive Rebound')">Offensive Rebound</button>
     </div>
@@ -51,23 +60,34 @@
 
   <script>
     const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg
-/exec';
+/exec'; // Replace this
+    let currentPlayer = '';
     let shotAttemptActive = false;
     let shotTimeout;
 
-    function getPlayerName() {
-      const name = document.getElementById('playerName').value.trim();
-      if (!name) alert('Please enter the player name.');
-      return name;
+    function selectPlayer(playerName) {
+      currentPlayer = playerName;
+      document.getElementById('selectedPlayerLabel').textContent = `${playerName} selected`;
+
+      // update active button
+      const buttons = document.querySelectorAll('.player-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('active-player');
+        if (btn.textContent === playerName) {
+          btn.classList.add('active-player');
+        }
+      });
     }
 
     function saveStat(category, stat, value = '') {
-      const player = getPlayerName();
-      if (!player) return;
+      if (!currentPlayer) {
+        alert('Please select a player first.');
+        return;
+      }
 
       const payload = {
         category,
-        player,
+        player: currentPlayer,
         stat,
         value
       };
@@ -84,6 +104,7 @@
     }
 
     document.getElementById('shotAttemptBtn').addEventListener('click', () => {
+      if (!currentPlayer) return alert('Select a player first.');
       if (shotAttemptActive) return;
 
       shotAttemptActive = true;
@@ -109,8 +130,9 @@
     }
 
     function recordSimple(stat) {
+      if (!currentPlayer) return alert('Select a player first.');
       saveStat('Offensive', stat, 1);
-      alert(`${stat} recorded`);
+      alert(`${stat} recorded for ${currentPlayer}`);
     }
 
     function resetShotState(message = 'Shot Attempt ended') {
