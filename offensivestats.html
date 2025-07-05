@@ -67,30 +67,27 @@
       <p class="text-primary fw-semibold" id="selectedPlayerLabel">No player selected</p>
     </div>
 
-    <!-- Shot Attempt -->
+    <!-- Shot Buttons -->
     <div class="mt-4">
-      <button id="shotAttemptBtn" class="btn btn-warning btn-block">Shot Attempt</button>
-      <p class="mt-2 text-muted" id="shotStatus"></p>
-
-      <!-- Points -->
-      <div class="btn-group mt-3 flex-wrap">
-        <button class="btn btn-outline-success" id="btn1">+1</button>
-        <button class="btn btn-outline-success" id="btn2">+2</button>
-        <button class="btn btn-outline-success" id="btn3">+3</button>
+      <p class="fw-semibold">Made Shots</p>
+      <div class="btn-group flex-wrap">
+        <button class="btn btn-success" onclick="recordShot('Made 1 Point', 1)">+1</button>
+        <button class="btn btn-success" onclick="recordShot('Made 2 Point', 2)">+2</button>
+        <button class="btn btn-success" onclick="recordShot('Made 3 Point', 3)">+3</button>
       </div>
 
-      <!-- Misses -->
-      <div class="btn-group mt-2 flex-wrap">
-        <button class="btn btn-outline-danger" id="btnMissFT">Free Throw</button>
-        <button class="btn btn-outline-danger" id="btnMiss2">2</button>
-        <button class="btn btn-outline-danger" id="btnMiss3">3</button>
+      <p class="fw-semibold mt-3">Missed Shots</p>
+      <div class="btn-group flex-wrap">
+        <button class="btn btn-danger" onclick="recordShot('Missed Free Throw', 0)">Free Throw</button>
+        <button class="btn btn-danger" onclick="recordShot('Missed 2 Point', 0)">2</button>
+        <button class="btn btn-danger" onclick="recordShot('Missed 3 Point', 0)">3</button>
       </div>
     </div>
 
     <!-- Other Stats -->
     <div class="mt-4">
-      <button class="btn btn-success btn-block" id="btnAssist">Assist</button>
-      <button class="btn btn-info btn-block" id="btnRebound">Offensive Rebound</button>
+      <button class="btn btn-success btn-block" onclick="recordSimple('Assist')">Assist</button>
+      <button class="btn btn-info btn-block" onclick="recordSimple('Offensive Rebound')">Offensive Rebound</button>
     </div>
   </div>
 
@@ -98,8 +95,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
       let currentPlayer = '';
-      let shotAttemptActive = false;
-      let shotTimeout;
 
       const playerButtons = document.querySelectorAll('.player-btn');
       const label = document.getElementById('selectedPlayerLabel');
@@ -114,20 +109,11 @@
         });
       });
 
-      document.getElementById('shotAttemptBtn').addEventListener('click', () => {
-        if (!currentPlayer) return alert('Please select a player first.');
-        if (shotAttemptActive) return;
-
-        shotAttemptActive = true;
-        document.getElementById('shotStatus').textContent = 'Shot Attempt started...';
-
-        shotTimeout = setTimeout(() => {
-          resetShotState('Shot attempt expired (no action)');
-        }, 3000);
-      });
-
       function saveStat(category, stat, value = '') {
-        if (!currentPlayer) return alert('Please select a player first.');
+        if (!currentPlayer) {
+          alert('Please select a player first.');
+          return;
+        }
 
         const payload = {
           category,
@@ -136,79 +122,29 @@
           value
         };
 
+        const form = new FormData();
+        form.append('payload', JSON.stringify(payload));
+
         fetch(API, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).then(() => {
+          body: form
+        })
+        .then(() => {
           console.log(`${stat} recorded for ${currentPlayer}`);
-        }).catch((err) => {
+        })
+        .catch((err) => {
           console.error('Error:', err);
+          alert('❌ Failed to record stat.');
         });
       }
 
-      function resetShotState(message = 'Shot Attempt ended') {
-        shotAttemptActive = false;
-        document.getElementById('shotStatus').textContent = message;
-        setTimeout(() => {
-          document.getElementById('shotStatus').textContent = '';
-        }, 3000);
-      }
+      window.recordShot = (stat, value) => {
+        saveStat('Offensive', stat, value);
+      };
 
-      // Scoring Buttons
-      document.getElementById('btn1').addEventListener('click', () => {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', 'Made 1 Point', 1);
-        resetShotState('+1 made');
-      });
-
-      document.getElementById('btn2').addEventListener('click', () => {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', 'Made 2 Point', 2);
-        resetShotState('+2 made');
-      });
-
-      document.getElementById('btn3').addEventListener('click', () => {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', 'Made 3 Point', 3);
-        resetShotState('+3 made');
-      });
-
-      // Missed Shot Buttons
-      document.getElementById('btnMissFT').addEventListener('click', () => {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', 'Missed Free Throw', 0);
-        resetShotState('Free Throw missed');
-      });
-
-      document.getElementById('btnMiss2').addEventListener('click', () => {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', 'Missed 2 Point', 0);
-        resetShotState('2 Point missed');
-      });
-
-      document.getElementById('btnMiss3').addEventListener('click', () => {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', 'Missed 3 Point', 0);
-        resetShotState('3 Point missed');
-      });
-
-      // Other Stats
-      document.getElementById('btnAssist').addEventListener('click', () => {
-        saveStat('Offensive', 'Assist', 1);
-        alert(`Assist recorded for ${currentPlayer}`);
-      });
-
-      document.getElementById('btnRebound').addEventListener('click', () => {
-        saveStat('Offensive', 'Offensive Rebound', 1);
-        alert(`Offensive Rebound recorded for ${currentPlayer}`);
-      });
+      window.recordSimple = (stat) => {
+        saveStat('Offensive', stat, 1);
+      };
     });
   </script>
 </body>
