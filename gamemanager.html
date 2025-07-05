@@ -127,11 +127,16 @@ function togglePlayer(n){
 /* === FOUL / TURNOVER === */
 function setStatType(t){statMode=t;}
 function statAction(n){
-  if(!gameStarted||!statMode) return;
-  statMode==='Foul' ? fouls[n]++ : turnovers[n]++;
-  logEvent(`Player ${n}`,statMode);
-  document.getElementById('logMsg').textContent=`${statMode} on Player ${n}`;
-  setTimeout(()=>document.getElementById('logMsg').textContent='',2000);
+  if (!gameStarted || !statMode) return;         // must be in-game + a mode picked
+  if (active.indexOf(n) === -1) return;          // ignore if player is NOT on court
+
+  if (statMode === 'Foul')     fouls[n]++;       // update local counters
+  if (statMode === 'Turnover') turnovers[n]++;
+
+  logEvent(`Player ${n}`, statMode);             // log to sheet
+  document.getElementById('logMsg').textContent =
+      `${statMode} on Player ${n}`;
+  setTimeout(() => document.getElementById('logMsg').textContent = '', 2000);
 }
 
 /* === LOGGING === */
