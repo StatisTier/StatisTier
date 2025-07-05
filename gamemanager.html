@@ -25,10 +25,18 @@
       <button class="btn btn-secondary rounded-end-pill px-3 ms-2" onclick="adjustTime(1)">+</button>
     </div>
 
-    <div class="btn-group mb-2 d-flex justify-content-center">
-      <button id="firstHalfBtn"  class="btn btn-primary circle-btn" onclick="setHalf('First Half')">1st</button>
-      <button id="secondHalfBtn" class="btn btn-outline-primary circle-btn" onclick="setHalf('Second Half')">2nd</button>
-    </div>
+    <!-- Fixed circular half buttons -->
+<div class="d-flex justify-content-center gap-2 mb-2">
+  <button id="firstHalfBtn"
+          class="btn btn-primary circle-btn"
+          onclick="setHalf('First Half')">1st</button>
+
+  <button id="secondHalfBtn"
+          class="btn btn-outline-primary circle-btn"
+          onclick="setHalf('Second Half')">2nd</button>
+</div>
+<div class="text-center fw-semibold mb-2" id="currentHalf">First Half</div>
+
     <div class="text-center mb-2 fw-semibold" id="currentHalf">First Half</div>
 
     <div class="text-center mb-3">
