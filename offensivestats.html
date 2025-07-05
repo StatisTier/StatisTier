@@ -71,34 +71,36 @@
     <div class="mt-4">
       <p class="fw-semibold">Made Shots</p>
       <div class="btn-group flex-wrap">
-        <button class="btn btn-success" onclick="recordShot('Made 1 Point', 1)">+1</button>
-        <button class="btn btn-success" onclick="recordShot('Made 2 Point', 2)">+2</button>
-        <button class="btn btn-success" onclick="recordShot('Made 3 Point', 3)">+3</button>
+        <button class="btn btn-success" data-stat="Made 1 Point" data-value="1">+1</button>
+        <button class="btn btn-success" data-stat="Made 2 Point" data-value="2">+2</button>
+        <button class="btn btn-success" data-stat="Made 3 Point" data-value="3">+3</button>
       </div>
 
       <p class="fw-semibold mt-3">Missed Shots</p>
       <div class="btn-group flex-wrap">
-        <button class="btn btn-danger" onclick="recordShot('Missed Free Throw', 0)">Free Throw</button>
-        <button class="btn btn-danger" onclick="recordShot('Missed 2 Point', 0)">2</button>
-        <button class="btn btn-danger" onclick="recordShot('Missed 3 Point', 0)">3</button>
+        <button class="btn btn-danger" data-stat="Missed Free Throw" data-value="0">Free Throw</button>
+        <button class="btn btn-danger" data-stat="Missed 2 Point" data-value="0">2</button>
+        <button class="btn btn-danger" data-stat="Missed 3 Point" data-value="0">3</button>
       </div>
     </div>
 
     <!-- Other Stats -->
     <div class="mt-4">
-      <button class="btn btn-success btn-block" onclick="recordSimple('Assist')">Assist</button>
-      <button class="btn btn-info btn-block" onclick="recordSimple('Offensive Rebound')">Offensive Rebound</button>
+      <button class="btn btn-warning btn-block" data-stat="Assist" data-value="1">Assist</button>
+      <button class="btn btn-info btn-block" data-stat="Offensive Rebound" data-value="1">Offensive Rebound</button>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
-      let currentPlayer = '';
+    const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
+    let currentPlayer = '';
 
+    document.addEventListener('DOMContentLoaded', () => {
       const playerButtons = document.querySelectorAll('.player-btn');
+      const actionButtons = document.querySelectorAll('button[data-stat]');
       const label = document.getElementById('selectedPlayerLabel');
 
+      // Handle player selection
       playerButtons.forEach(button => {
         button.addEventListener('click', () => {
           currentPlayer = button.dataset.player.trim();
@@ -109,43 +111,41 @@
         });
       });
 
-      function saveStat(category, stat, value = '') {
-        if (!currentPlayer) {
-          alert('Please select a player first.');
-          return;
-        }
+      // Handle stat buttons
+      actionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (!currentPlayer) {
+            alert('Please select a player first.');
+            return;
+          }
 
-        const payload = {
-          category,
-          player: currentPlayer,
-          stat,
-          value
-        };
+          const stat = button.dataset.stat;
+          const value = button.dataset.value;
 
-        const form = new FormData();
-        form.append('payload', JSON.stringify(payload));
+          const payload = {
+            category: 'Offensive',
+            player: currentPlayer,
+            stat,
+            value
+          };
 
-        fetch(API, {
-          method: 'POST',
-          body: form
-        })
-        .then(res => res.json())
-        .then(json => {
-          console.log('✅ Saved:', json);
-        })
-        .catch((err) => {
-          console.error('❌ Error:', err);
-          alert('❌ Could not save stat.');
+          const form = new FormData();
+          form.append('payload', JSON.stringify(payload));
+
+          fetch(API, {
+            method: 'POST',
+            body: form
+          })
+          .then(res => res.json())
+          .then(json => {
+            console.log(`✅ ${stat} (${value}) logged for ${currentPlayer}`);
+          })
+          .catch(err => {
+            console.error('❌ Failed:', err);
+            alert('❌ Could not save stat.');
+          });
         });
-      }
-
-      window.recordShot = (stat, value) => {
-        saveStat('Offensive', stat, value);
-      };
-
-      window.recordSimple = (stat) => {
-        saveStat('Offensive', stat, 1);
-      };
+      });
     });
   </script>
 </body>
