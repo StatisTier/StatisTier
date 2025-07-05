@@ -1,202 +1,143 @@
-<!-- Code is long and will be split across multiple replies due to length limits -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Game Manager</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; padding: 20px; }
-    .circle-btn {
-      margin: 5px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      font-size: 1rem;
-      padding: 0;
-    }
-    #timerDisplay { font-size: 2rem; font-weight: bold; }
-    .stat-btn { margin: 5px; }
-    .sub-in { background-color: #28a745 !important; }
-    .sub-out { background-color: #dc3545 !important; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game Manager</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+  body{background:#f8f9fa;padding:20px}
+  .circle-btn{margin:5px;width:60px;height:60px;border-radius:50%;font-size:.9rem;padding:0;line-height:46px}
+  .player-time{font-size:.8rem;color:#555}
+  .stat-count{font-size:.75rem;margin-top:4px}
+  #timerDisplay{font-size:2rem;font-weight:bold}
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2 class="text-center mb-4">Game Manager</h2>
+<div class="container">
+  <h2 class="text-center mb-3">Game Manager</h2>
 
-    <div class="text-center mb-3">
-      <div id="timerDisplay">18:00</div>
-      <div class="btn-group my-2">
-        <button class="btn btn-secondary" onclick="adjustTime(-1)">−</button>
-        <button class="btn btn-secondary" onclick="adjustTime(1)">+</button>
-      </div>
-      <div class="mb-2">
-        <select id="halfSelect" class="form-select" style="max-width: 200px; margin: auto;">
-          <option value="First Half">First Half</option>
-          <option value="Second Half">Second Half</option>
-        </select>
-      </div>
-      <div class="btn-group">
-        <button id="startBtn" class="btn btn-success">Start</button>
-        <button id="stopBtn" class="btn btn-danger">Stop</button>
-      </div>
+  <!-- TIMER -->
+  <div class="text-center mb-3">
+    <div id="timerDisplay">18:00</div>
+    <div class="btn-group my-1">
+      <button class="btn btn-secondary" onclick="adjustTime(-1)">−</button>
+      <button class="btn btn-secondary" onclick="adjustTime(1)">+</button>
     </div>
-
-    <h5 id="courtStatus" class="text-center mb-3">Select Starting 5</h5>
-
-    <div id="playerButtons" class="d-flex flex-wrap justify-content-center mb-3"></div>
-
-    <div class="text-center mb-3">
-      <button id="subBtn" class="btn btn-primary">Sub</button>
+    <select id="halfSelect" class="form-select mb-2" style="max-width:200px;margin:auto">
+      <option>First Half</option><option>Second Half</option>
+    </select>
+    <div class="btn-group">
+      <button id="startBtn" class="btn btn-success">Start</button>
+      <button id="stopBtn"  class="btn btn-danger">Stop</button>
     </div>
-
-    <div id="statsSection" class="text-center mb-3" style="display: none;">
-      <h5>Foul & Turnover</h5>
-      <div class="btn-group mb-2">
-        <button class="btn btn-warning" onclick="setStatType('Foul')">Foul</button>
-        <button class="btn btn-danger" onclick="setStatType('Turnover')">Turnover</button>
-      </div>
-      <div id="statPlayerButtons" class="d-flex flex-wrap justify-content-center"></div>
-    </div>
-
-    <div class="text-center">
-      <h5>Timeout</h5>
-      <button class="btn btn-warning m-2" onclick="logEvent('My Team', 'Timeout')">My Team</button>
-      <button class="btn btn-secondary m-2" onclick="logEvent('Opponent', 'Timeout')">Opponent</button>
-    </div>
-
-    <div id="logMessage" class="text-center mt-3 text-success fw-semibold"></div>
   </div>
 
+  <h5 id="courtStatus" class="text-center mb-2">Select Starting 5</h5>
+
+  <!-- PLAYERS -->
+  <div id="playerButtons" class="d-flex flex-wrap justify-content-center mb-3"></div>
+
+  <!-- SUB BUTTON -->
+  <div class="text-center mb-3">
+    <button id="subBtn" class="btn btn-primary">Sub</button>
+  </div>
+
+  <!-- FOUL / TO -->
+  <div id="statsSection" class="text-center mb-3" style="display:none">
+    <h5>Foul & Turnover</h5>
+    <div class="btn-group mb-2">
+      <button class="btn btn-warning" onclick="setStatType('Foul')">Foul</button>
+      <button class="btn btn-danger"  onclick="setStatType('Turnover')">Turnover</button>
+    </div>
+    <div id="statPlayerButtons" class="d-flex flex-wrap justify-content-center"></div>
+  </div>
+
+  <!-- TIMEOUTS -->
+  <div class="text-center mb-2">
+    <h5>Timeout</h5>
+    <button class="btn btn-warning m-1"   onclick="logEvent('My Team','Timeout')">My Team</button>
+    <button class="btn btn-secondary m-1" onclick="logEvent('Opponent','Timeout')">Opponent</button>
+  </div>
+
+  <div id="logMsg" class="text-center text-success fw-semibold"></div>
+</div>
+
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
-let timeLeft = 1080;
-let timer = null;
-let isRunning = false;
-let selectedPlayers = [];
-let gameStarted = false;
-let subStep = 0;
-let subOutPlayer = null;
-let statMode = null;
+const API='https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
 
-function updateTimerDisplay() {
-  let min = Math.floor(timeLeft / 60);
-  let sec = timeLeft % 60;
-  document.getElementById("timerDisplay").textContent = `${min}:${sec < 10 ? "0" + sec : sec}`;
-}
+let timeLeft=1080,timer=null,isRunning=false,
+    active=[],playerTime={},fouls={},turnovers={},
+    gameStarted=false,subMode=false,statMode=null;
 
-function adjustTime(delta) {
-  timeLeft = Math.max(0, timeLeft + delta);
-  updateTimerDisplay();
-}
+function adjustTime(d){timeLeft=Math.max(0,timeLeft+d);updateClock()}
+function updateClock(){const m=Math.floor(timeLeft/60),s=timeLeft%60;
+  document.getElementById("timerDisplay").textContent=`${m}:${s<10?"0"+s:s}`}
 
-function togglePlayer(id) {
-  const index = selectedPlayers.indexOf(id);
-  const btn = document.getElementById("player-" + id);
-  if (!gameStarted) {
-    if (index === -1 && selectedPlayers.length < 5) {
-      selectedPlayers.push(id);
-      btn.classList.add("btn-success");
-    } else if (index !== -1) {
-      selectedPlayers.splice(index, 1);
-      btn.classList.remove("btn-success");
+document.getElementById("startBtn").onclick=()=>{
+  if(active.length===5&&!gameStarted){gameStarted=true;
+    document.getElementById("courtStatus").textContent="Players On Court";
+    document.getElementById("statsSection").style.display="block";
+    timer=setInterval(()=>{if(timeLeft>0){timeLeft--;updateClock();active.forEach(p=>playerTime[p]++)}},1000);
+  }
+};
+document.getElementById("stopBtn").onclick=()=>{clearInterval(timer);isRunning=false};
+
+function activateSubMode(){if(gameStarted)subMode=true}
+document.getElementById("subBtn").onclick=activateSubMode;
+
+function togglePlayer(n){
+  const btn=document.getElementById(`p${n}`);
+  if(!gameStarted){ // pre-game start/bench toggle
+    const idx=active.indexOf(n);
+    if(idx===-1&&active.length<5){active.push(n);btn.classList.add("btn-success")}
+    else if(idx!==-1){active.splice(idx,1);btn.classList.remove("btn-success")}
+  }else if(subMode){
+    const idx=active.indexOf(n);
+    if(idx!==-1){           // Sub Out
+      active.splice(idx,1); btn.classList.remove("btn-success");
+      logEvent(`Player ${n}`,'Sub Out');
+    }else if(active.length<5){ // Sub In
+      active.push(n); btn.classList.add("btn-success");
+      logEvent(`Player ${n}`,'Sub In');
     }
-  } else if (subStep === 1) {
-    subOutPlayer = id;
-    btn.classList.add("sub-out");
-    subStep = 2;
-  } else if (subStep === 2) {
-    const inIndex = selectedPlayers.indexOf(id);
-    if (inIndex === -1 && subOutPlayer !== null) {
-      const outIndex = selectedPlayers.indexOf(subOutPlayer);
-      selectedPlayers[outIndex] = id;
-      document.getElementById("player-" + subOutPlayer).classList.remove("btn-success", "sub-out");
-      document.getElementById("player-" + id).classList.add("btn-success");
-      logEvent("Sub", `Out: Player ${subOutPlayer}, In: Player ${id}`);
-      subOutPlayer = null;
-      subStep = 0;
-    }
+    subMode=false;
   }
 }
 
-function generatePlayers() {
-  const container = document.getElementById("playerButtons");
-  const statButtons = document.getElementById("statPlayerButtons");
-  for (let i = 1; i <= 7; i++) {
-    let btn = document.createElement("button");
-    btn.id = "player-" + i;
-    btn.className = "btn btn-outline-dark circle-btn";
-    btn.textContent = i;
-    btn.onclick = () => togglePlayer(i);
-    container.appendChild(btn);
-
-    let statBtn = document.createElement("button");
-    statBtn.className = "btn btn-outline-dark circle-btn";
-    statBtn.textContent = i;
-    statBtn.onclick = () => {
-      if (statMode && gameStarted) {
-        logEvent("Player " + i, statMode);
-        document.getElementById("logMessage").textContent = `Player ${i} committed a ${statMode}`;
-        setTimeout(() => document.getElementById("logMessage").textContent = '', 2000);
-      }
-    };
-    statButtons.appendChild(statBtn);
+function setStatType(type){statMode=type}
+function statAction(n){
+  if(statMode&&gameStarted){
+    if(statMode==='Foul'){fouls[n]++;}
+    else{turnovers[n]++;}
+    logEvent(`Player ${n}`,statMode);
+    document.getElementById("logMsg").textContent=`${statMode} on Player ${n}`;
+    setTimeout(()=>document.getElementById("logMsg").textContent='',2000);
   }
 }
 
-document.getElementById("startBtn").onclick = () => {
-  if (selectedPlayers.length === 5 && !gameStarted) {
-    gameStarted = true;
-    document.getElementById("courtStatus").textContent = "Players On Court";
-    document.getElementById("statsSection").style.display = "block";
-    timer = setInterval(() => {
-      if (timeLeft > 0) {
-        timeLeft--;
-        updateTimerDisplay();
-      }
-    }, 1000);
-  }
-};
-
-document.getElementById("stopBtn").onclick = () => {
-  clearInterval(timer);
-  isRunning = false;
-};
-
-document.getElementById("subBtn").onclick = () => {
-  if (gameStarted) {
-    subStep = 1;
-  }
-};
-
-function setStatType(type) {
-  statMode = type;
+function logEvent(player,stat,val=1){
+  const payload={category:'GameManager',player,stat,value:val,
+    clock:document.getElementById("timerDisplay").textContent,
+    half:document.getElementById("halfSelect").value};
+  const fd=new FormData();fd.append('payload',JSON.stringify(payload));
+  fetch(API,{method:'POST',body:fd}).catch(console.error);
 }
 
-function logEvent(player, stat) {
-  const payload = {
-    category: "GameManager",
-    player: player,
-    stat: stat,
-    value: 1,
-    clock: document.getElementById("timerDisplay").textContent,
-    half: document.getElementById("halfSelect").value
-  };
-
-  const form = new FormData();
-  form.append("payload", JSON.stringify(payload));
-
-  fetch(API, { method: "POST", body: form })
-    .then(res => res.json())
-    .then(() => console.log("✅ Logged:", payload))
-    .catch(err => console.error("❌ Error:", err));
+function createUI(){
+  const pCont=document.getElementById("playerButtons"),
+        sCont=document.getElementById("statPlayerButtons");
+  for(let i=1;i<=7;i++){
+    playerTime[i]=fouls[i]=turnovers[i]=0;
+    const b=document.createElement("button");b.id=`p${i}`;b.className="btn btn-outline-dark circle-btn";b.textContent=i;
+    b.onclick=()=>togglePlayer(i);pCont.appendChild(b);
+    const sb=document.createElement("button");sb.className="btn btn-outline-dark circle-btn";sb.textContent=i;
+    sb.onclick=()=>statAction(i);sCont.appendChild(sb);
+  }
 }
 
-generatePlayers();
-updateTimerDisplay();
+document.getElementById("timerSelect")?.addEventListener("change",e=>{timeLeft=parseInt(e.target.value);updateClock()});
+updateClock();createUI();
 </script>
 </body>
 </html>
