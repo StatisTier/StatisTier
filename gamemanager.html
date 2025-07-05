@@ -154,20 +154,42 @@ function buildUI(){
   }
 }
 
-/* === START / STOP === */
-document.getElementById('startBtn').onclick=()=>{
-  if(active.length===5&&!gameStarted){
-     active.forEach(p=>logEvent(`Player ${p}`,'Starting Five'));  // individual entries
-     gameStarted=true;
-     document.getElementById('courtStatus').textContent='Players On Court';
-     document.getElementById('statsSection').style.display='block';
-     document.getElementById('firstHalfBtn').disabled=true;
-     document.getElementById('secondHalfBtn').disabled=true;
-     timer=setInterval(()=>{if(timeLeft>0){timeLeft--;updateClock();}},1000);
+/* ---------- Start / Stop logic  (supports resume) ---------- */
+let timer     = null;   // interval handle
+let isRunning = false;  // true while the clock is ticking
+
+document.getElementById('startBtn').onclick = () => {
+  /* 1️⃣  First-time start: initialise the game */
+  if (active.length === 5 && !gameStarted) {
+    active.forEach(p => logEvent(`Player ${p}`, 'Starting Five'));   // log each starter
+    gameStarted = true;
+
+    document.getElementById('courtStatus').textContent = 'Players On Court';
+    document.getElementById('statsSection').style.display = 'block';
+
+    // lock half buttons once the game begins
+    document.getElementById('firstHalfBtn').disabled = true;
+    document.getElementById('secondHalfBtn').disabled = true;
+  }
+
+  /* 2️⃣  Resume timer if it’s not already running */
+  if (gameStarted && !isRunning) {
+    isRunning = true;
+    timer = setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateClock();
+      }
+    }, 1000);
   }
 };
-document.getElementById('stopBtn').onclick=()=>{clearInterval(timer);};
-document.getElementById('subBtn').onclick=()=>{if(gameStarted) subMode=true;};
+
+document.getElementById('stopBtn').onclick = () => {
+  clearInterval(timer);   // pause the clock
+  isRunning = false;      // allow Start to resume later
+};
+/* ----------------------------------------------------------- */
+
 
 /* === INIT === */
 buildUI();updateClock();setHalf('First Half');
