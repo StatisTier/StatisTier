@@ -1,267 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Game Manager</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-<style>
-  body{background:#f8f9fa;padding:20px;font-family:sans-serif}
-  .circle-btn{
-    width:60px;height:60px;border-radius:50%;
-    font-size:1rem;font-weight:600;margin:6px;
-    display:flex;align-items:center;justify-content:center;padding:0
-  }
-  #timerDisplay{font-size:2rem;font-weight:bold;margin:0 16px}
-  .player-wrap{display:flex;flex-direction:column;align-items:center;margin:4px}
-  .mini-stat{font-size:.7rem;color:#555;line-height:1.1rem;text-align:center}
-  #logMsg{min-height:24px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #f8f9fa; padding: 20px; }
+    .circle-btn {
+      margin: 5px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #timerDisplay { font-size: 2rem; font-weight: bold; }
+    .active-player { background-color: #198754; color: white; }
+    .btn-danger-sub { background-color: #dc3545; color: white; }
+    #logMsg { min-height: 24px; }
+  </style>
 </head>
 <body>
-<div class="container text-center">
-  <h2 class="mb-3">Game Manager</h2>
+  <div class="container text-center">
+    <h2 class="mb-3">Game Manager</h2>
 
-  <!-- TIMER -->
-  <div class="d-flex justify-content-center align-items-center mb-3">
-    <button id="minusBtn" class="btn btn-secondary circle-btn me-2">−</button>
-    <div id="timerDisplay">18:00</div>
-    <button id="plusBtn"  class="btn btn-secondary circle-btn ms-2">+</button>
-  </div>
+    <!-- TIMER + HALF -->
+    <div class="d-flex justify-content-center align-items-center mb-3">
+      <button class="btn btn-secondary circle-btn" id="minusBtn">−</button>
+      <div id="timerDisplay" class="mx-3">18:00</div>
+      <button class="btn btn-secondary circle-btn" id="plusBtn">+</button>
+    </div>
 
-  <!-- HALF SELECTOR -->
-  <div class="d-flex justify-content-center gap-2 mb-2">
-    <button id="firstHalfBtn"  class="btn btn-primary circle-btn"         onclick="setHalf('First Half')">1st</button>
-    <button id="secondHalfBtn" class="btn btn-outline-primary circle-btn" onclick="setHalf('Second Half')">2nd</button>
-  </div>
-  <div id="currentHalf" class="fw-semibold mb-3">First Half</div>
+    <div class="d-flex justify-content-center mb-2">
+      <button id="firstHalfBtn" class="btn btn-primary circle-btn me-2" onclick="setHalf('First Half')">1st</button>
+      <button id="secondHalfBtn" class="btn btn-outline-primary circle-btn" onclick="setHalf('Second Half')">2nd</button>
+    </div>
+    <div id="currentHalf" class="fw-bold mb-3">First Half</div>
 
-  <!-- MAIN CONTROLS -->
-  <div class="d-flex justify-content-center mb-3">
-    <button id="startBtn" class="btn btn-success circle-btn me-2">▶</button>
-    <button id="stopBtn"  class="btn btn-danger  circle-btn me-2">■</button>
-    <button id="subBtn"   class="btn btn-primary circle-btn me-2">↔</button>
-    <button id="undoBtn"  class="btn btn-dark    circle-btn" disabled>↩</button>
-  </div>
+    <!-- Start / Stop -->
+    <div class="mb-3">
+      <button class="btn btn-success circle-btn" onclick="startGame()">▶</button>
+      <button class="btn btn-danger circle-btn" onclick="stopGame()">■</button>
+    </div>
 
-  <!-- END-PERIOD BUTTON -->
-  <div class="d-flex justify-content-center mb-3">
-    <button id="endHalfBtn" class="btn btn-outline-dark circle-btn" style="display:none"></button>
-  </div>
+    <!-- Starting 5 -->
+    <h5 id="courtStatus">Select Starting 5</h5>
+    <div id="playerButtons" class="d-flex justify-content-center flex-wrap mb-2"></div>
+    <div id="playerStats" class="mb-4"></div>
 
-  <h5 id="courtStatus">Select Starting 5</h5>
-  <div id="playerButtons" class="d-flex flex-wrap justify-content-center mb-3"></div>
+    <!-- Substitutions -->
+    <button class="btn btn-primary circle-btn mb-3" onclick="startSub()">↔</button>
 
-  <!-- FOUL / TURNOVER -->
-  <div id="statsSection" class="mb-3" style="display:none">
+    <!-- Foul & Turnover -->
     <h5>Foul & Turnover</h5>
     <div class="d-flex justify-content-center mb-2">
       <button class="btn btn-warning circle-btn me-2" onclick="setStatType('Foul')">F</button>
-      <button class="btn btn-danger  circle-btn"    onclick="setStatType('Turnover')">T</button>
+      <button class="btn btn-danger circle-btn" onclick="setStatType('Turnover')">T</button>
     </div>
-    <div id="statPlayerButtons" class="d-flex flex-wrap justify-content-center"></div>
-  </div>
+    <div id="foulTurnoverButtons" class="d-flex justify-content-center flex-wrap mb-4"></div>
 
-  <!-- TIMEOUT -->
-  <div class="mb-3">
+    <!-- Timeout -->
     <h5>Timeout</h5>
-    <div class="d-flex justify-content-center">
-      <button class="btn btn-warning   circle-btn me-2" onclick="logAndStore('My Team','Timeout')">My</button>
-      <button class="btn btn-secondary circle-btn"      onclick="logAndStore('Opponent','Timeout')">Op</button>
+    <div class="mb-3">
+      <button class="btn btn-warning circle-btn me-2" onclick="logEvent('My Team', 'Timeout')">M</button>
+      <button class="btn btn-secondary circle-btn" onclick="logEvent('Opponent', 'Timeout')">O</button>
     </div>
+
+    <!-- End Half -->
+    <div id="endHalfBtnContainer" class="mb-3"></div>
+
+    <div id="logMsg" class="text-success fw-bold"></div>
   </div>
 
-  <div id="logMsg" class="text-success fw-semibold"></div>
-</div>
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
+    let timeLeft = 1080;
+    let timer, running = false;
+    let activePlayers = [], playerTime = {}, fouls = {}, turnovers = {};
+    let subMode = false, subOut = null, statMode = null;
+    let currentHalf = "First Half";
+    let currentOvertime = 0;
+    let holdInterval;
 
-<script>
-const API='https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
-
-/* ---------- STATE ---------- */
-let timeLeft   = 1080;      // seconds, default 18:00
-let timer      = null;
-let isRunning  = false;
-
-let active      = [];       // players on court
-let playerTime  = {}, fouls = {}, turnovers = {};
-
-let gameStarted  = false;
-let subMode      = false, subOut = null, statMode = null;
-let selectedHalf = 'First Half';
-let halfNumber   = 1;       // 1=1st, 2=2nd, >2 => OT
-let otCount      = 0;
-
-let lastPayload  = null;    // for undo
-
-/* ---------- UI HELPERS ---------- */
-function fmt(s){return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';}
-function updateClock(){
-  const m=Math.floor(timeLeft/60),s=timeLeft%60;
-  document.getElementById('timerDisplay').textContent=`${m}:${s<10?'0'+s:s}`;
-}
-function renderPlayer(i){
-  document.getElementById('ps'+i).textContent=
-    `${fmt(playerTime[i])} • F${fouls[i]} • T${turnovers[i]}`;
-}
-
-/* ---------- HALF SELECTOR ---------- */
-function setHalf(h){
-  if(gameStarted) return;
-  selectedHalf = h;
-  document.getElementById('firstHalfBtn').className =
-    h==='First Half' ? 'btn btn-primary circle-btn' : 'btn btn-outline-primary circle-btn';
-  document.getElementById('secondHalfBtn').className =
-    h==='Second Half' ? 'btn btn-primary circle-btn' : 'btn btn-outline-primary circle-btn';
-  document.getElementById('currentHalf').textContent = h;
-}
-
-/* ---------- FAST SCRUB BUTTONS ---------- */
-let holdInt=null;
-function stepOnce(d){ if(!gameStarted){ timeLeft=Math.max(0,timeLeft+d); updateClock(); } }
-function startHold(d){ stepOnce(d); holdInt=setInterval(()=>stepOnce(d>0?10:-10),100); }
-function stopHold(){ clearInterval(holdInt); }
-['mousedown','touchstart'].forEach(evt=>{
-  minusBtn.addEventListener(evt,e=>{if(e.type==='touchstart')e.preventDefault();startHold(-1);});
-  plusBtn .addEventListener(evt,e=>{if(e.type==='touchstart')e.preventDefault();startHold( 1);});
-});
-['mouseup','mouseleave','touchend','touchcancel'].forEach(evt=>{
-  minusBtn.addEventListener(evt,stopHold);
-  plusBtn .addEventListener(evt,stopHold);
-});
-
-/* ---------- PLAYER & SUB ---------- */
-function togglePlayer(i){
-  const btn=document.getElementById('p'+i);
-  if(!gameStarted){
-    const idx=active.indexOf(i);
-    if(idx===-1&&active.length<5){active.push(i);btn.classList.add('btn-success');}
-    else if(idx!==-1){active.splice(idx,1);btn.classList.remove('btn-success');}
-  }else if(subMode){
-    const idx=active.indexOf(i);
-    if(subOut===null&&idx!==-1){subOut=i;btn.classList.add('btn-danger');logAndStore(`Player ${i}`,'Sub Out');}
-    else if(subOut!==null&&idx===-1){
-      document.getElementById('p'+subOut).classList.remove('btn-danger','btn-success');
-      active.splice(active.indexOf(subOut),1);active.push(i);
-      btn.classList.add('btn-success');logAndStore(`Player ${i}`,'Sub In');
-      subOut=null;subMode=false;
+    function formatTime(secs) {
+      let m = Math.floor(secs / 60), s = secs % 60;
+      return `${m}m ${s.toString().padStart(2, '0')}s`;
     }
-  }
-}
 
-/* ---------- STAT MODE ---------- */
-function setStatType(t){statMode=t;}
-function statAction(i){
-  if(!gameStarted||!statMode) return;
-  if(!document.getElementById('p'+i).classList.contains('btn-success'))return;
-  if(statMode==='Foul') fouls[i]++; else turnovers[i]++;
-  renderPlayer(i); logAndStore(`Player ${i}`,statMode);
-}
-
-/* ---------- LOG + UNDO ---------- */
-function logAndStore(player,stat,val=1){
-  const payload={category:'GameManager',player,stat,value:val,
-                 clock:timerDisplay.textContent,half:selectedHalf};
-  const fd=new FormData();fd.append('payload',JSON.stringify(payload));
-  fetch(API,{method:'POST',body:fd}).catch(console.error);
-  lastPayload=payload; undoBtn.disabled=false;
-  logMsg.textContent=`Logged: ${stat}`; setTimeout(()=>logMsg.textContent='',2500);
-}
-undoBtn.onclick=()=>{
-  if(!lastPayload) return;
-  const undo={...lastPayload,stat:'UNDO '+lastPayload.stat,value:-lastPayload.value};
-  const fd=new FormData();fd.append('payload',JSON.stringify(undo));
-  fetch(API,{method:'POST',body:fd}).catch(console.error);
-  const p=parseInt(lastPayload.player.split(' ')[1]);
-  if(lastPayload.stat==='Foul'){fouls[p]--; renderPlayer(p);}
-  if(lastPayload.stat==='Turnover'){turnovers[p]--; renderPlayer(p);}
-  lastPayload=null; undoBtn.disabled=true;
-};
-
-/* ---------- END PERIOD ---------- */
-function showEndBtn(){
-  endHalfBtn.textContent = (halfNumber===1?'End 1st':'End 2nd');
-  if(halfNumber>2) endHalfBtn.textContent='End OT'+otCount;
-  endHalfBtn.style.display='inline-flex';
-}
-function hideEndBtn(){ endHalfBtn.style.display='none'; }
-endHalfBtn.onclick = () => {
-  /* log play-time rows */
-  for(let i=1;i<=7;i++){ if(playerTime[i]>0) logAndStore(`Player ${i}`,'Play Time',playerTime[i]); }
-  /* reset player states */
-  active=[]; subMode=false; subOut=null;
-  for(let i=1;i<=7;i++){
-    playerTime[i]=fouls[i]=turnovers[i]=0;
-    document.getElementById('p'+i).classList.remove('btn-success','btn-danger');
-    renderPlayer(i);
-  }
-  hideEndBtn();
-  isRunning=false; gameStarted=false;
-  /* ADVANCE PERIOD */
-  if(halfNumber===1){                 // -> SECOND HALF
-    halfNumber=2; selectedHalf='Second Half'; setHalf(selectedHalf);
-    timeLeft=1080; updateClock();
-    logMsg.textContent='2nd Half ready – select players & Start';
-  } else if(halfNumber===2){          // end of regulation
-    if(confirm('Is the score tied?  OK = Start Overtime.  Cancel = End Game.')){
-      otCount++; halfNumber=3+otCount-1; selectedHalf='OT'+otCount;
-      currentHalf.textContent=selectedHalf; timeLeft=300; updateClock();
-      logMsg.textContent='Overtime '+otCount+' ready – select players & Start';
-      firstHalfBtn.disabled=true; secondHalfBtn.disabled=true;
-    } else {
-      logMsg.textContent='Game finished ✔';
-      startBtn.disabled=true; subBtn.disabled=true;
+    function updateTimerDisplay() {
+      let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+      document.getElementById("timerDisplay").textContent = `${m}:${s.toString().padStart(2, '0')}`;
     }
-  } else {                            // additional OT
-    otCount++; halfNumber++;
-    selectedHalf='OT'+otCount; currentHalf.textContent=selectedHalf;
-    timeLeft=300; updateClock();
-    logMsg.textContent='Overtime '+otCount+' ready – select players & Start';
-  }
-};
 
-/* ---------- BUILD PLAYER UI ---------- */
-function buildUI(){
-  for(let i=1;i<=7;i++){
-    playerTime[i]=fouls[i]=turnovers[i]=0;
-    /* court buttons */
-    const wrap=document.createElement('div'); wrap.className='player-wrap';
-    const btn=document.createElement('button'); btn.id='p'+i;
-    btn.className='btn btn-outline-dark circle-btn'; btn.textContent=i;
-    btn.onclick=()=>togglePlayer(i); wrap.appendChild(btn);
-    const mini=document.createElement('div'); mini.id='ps'+i; mini.className='mini-stat';
-    mini.textContent='0m 00s • F0 • T0'; wrap.appendChild(mini);
-    playerButtons.appendChild(wrap);
-    /* stat buttons */
-    const sb=document.createElement('button'); sb.className='btn btn-outline-dark circle-btn';
-    sb.textContent=i; sb.onclick=()=>statAction(i); statPlayerButtons.appendChild(sb);
-  }
-}
+    function adjustTime(delta) {
+      timeLeft = Math.max(0, timeLeft + delta);
+      updateTimerDisplay();
+    }
 
-/* ---------- START / STOP & TIMER LOOP ---------- */
-startBtn.onclick = () => {
-  if(active.length===5 && !gameStarted){
-    active.forEach(p=>logAndStore(`Player ${p}`,'Starting Five'));
-    gameStarted=true; courtStatus.textContent='Players On Court';
-    statsSection.style.display='block';
-    firstHalfBtn.disabled=true; secondHalfBtn.disabled=true;
-  }
-  if(gameStarted && !isRunning){
-    isRunning = true;
-    timer = setInterval(()=>{
-      if(timeLeft>0){
-        timeLeft--; updateClock();
-        active.forEach(p=>{ playerTime[p]++; renderPlayer(p); });
-      } else {
-        clearInterval(timer); isRunning=false; showEndBtn();
+    function holdAdjust(btn, delta) {
+      btn.addEventListener("mousedown", () => {
+        adjustTime(delta);
+        holdInterval = setInterval(() => adjustTime(delta * 10), 150);
+      });
+      btn.addEventListener("mouseup", () => clearInterval(holdInterval));
+      btn.addEventListener("mouseleave", () => clearInterval(holdInterval));
+    }
+
+    function setHalf(half) {
+      if (running) return;
+      currentHalf = half;
+      document.getElementById("currentHalf").textContent = half;
+      document.getElementById("firstHalfBtn").classList.toggle("btn-primary", half === "First Half");
+      document.getElementById("firstHalfBtn").classList.toggle("btn-outline-primary", half !== "First Half");
+      document.getElementById("secondHalfBtn").classList.toggle("btn-primary", half === "Second Half");
+      document.getElementById("secondHalfBtn").classList.toggle("btn-outline-primary", half !== "Second Half");
+    }
+
+    function togglePlayer(n) {
+      const btn = document.getElementById(`p${n}`);
+      if (!running) {
+        if (activePlayers.includes(n)) {
+          activePlayers = activePlayers.filter(p => p !== n);
+          btn.classList.remove("active-player");
+        } else if (activePlayers.length < 5) {
+          activePlayers.push(n);
+          btn.classList.add("active-player");
+        }
+      } else if (subMode) {
+        if (!subOut && activePlayers.includes(n)) {
+          subOut = n;
+          btn.classList.add("btn-danger-sub");
+        } else if (subOut && !activePlayers.includes(n)) {
+          document.getElementById(`p${subOut}`).classList.remove("btn-danger-sub", "active-player");
+          activePlayers = activePlayers.filter(p => p !== subOut);
+          activePlayers.push(n);
+          btn.classList.add("active-player");
+          logEvent(`Player ${subOut}`, "Sub Out");
+          logEvent(`Player ${n}`, "Sub In");
+          subOut = null;
+          subMode = false;
+        }
       }
-    },1000);
-  }
-};
-stopBtn.onclick = () => { clearInterval(timer); isRunning=false; };
-subBtn.onclick  = () => { if(gameStarted) subMode=true; };
+      updateFoulTurnoverButtons();
+    }
 
-/* ---------- INIT ---------- */
-buildUI(); updateClock(); setHalf('First Half');
-</script>
+    function startSub() {
+      if (!running) return;
+      subMode = true;
+      subOut = null;
+    }
+
+    function setStatType(type) {
+      statMode = type;
+    }
+
+    function recordStat(n) {
+      if (!statMode || !activePlayers.includes(n)) return;
+      if (statMode === "Foul") fouls[n]++;
+      if (statMode === "Turnover") turnovers[n]++;
+      logEvent(`Player ${n}`, statMode);
+      document.getElementById("logMsg").textContent = `${statMode} on Player ${n}`;
+      setTimeout(() => document.getElementById("logMsg").textContent = "", 2000);
+      updateFoulTurnoverButtons();
+    }
+
+    function logEvent(player, stat, value = "") {
+      const payload = {
+        category: "GameManager",
+        player, stat, value,
+        clock: document.getElementById("timerDisplay").textContent,
+        half: currentHalf + (currentOvertime ? ` OT${currentOvertime}` : "")
+      };
+      const fd = new FormData();
+      fd.append("payload", JSON.stringify(payload));
+      fetch(API, { method: "POST", body: fd }).catch(console.error);
+    }
+
+    function updateFoulTurnoverButtons() {
+      const container = document.getElementById("foulTurnoverButtons");
+      container.innerHTML = "";
+      for (let i = 1; i <= 7; i++) {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-outline-dark circle-btn";
+        if (activePlayers.includes(i)) btn.classList.add("active-player");
+        btn.textContent = i;
+        btn.onclick = () => recordStat(i);
+        container.appendChild(btn);
+      }
+      updateStatsDisplay();
+    }
+
+    function updateStatsDisplay() {
+      const div = document.getElementById("playerStats");
+      div.innerHTML = "";
+      for (let i = 1; i <= 7; i++) {
+        const info = `${formatTime(playerTime[i] || 0)} • F${fouls[i] || 0} • T${turnovers[i] || 0}`;
+        const el = document.createElement("div");
+        el.className = "d-inline-block text-center mx-2";
+        el.innerHTML = `<strong>${i}</strong><br><small>${info}</small>`;
+        div.appendChild(el);
+      }
+    }
+
+    function startGame() {
+      if (activePlayers.length < 5 || running) return;
+      activePlayers.forEach(p => logEvent(`Player ${p}`, "Starting Five"));
+      running = true;
+      document.getElementById("courtStatus").textContent = "Players On Court";
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        activePlayers.forEach(p => playerTime[p] = (playerTime[p] || 0) + 1);
+        updateStatsDisplay();
+        if (timeLeft <= 0) endHalfPrompt();
+      }, 1000);
+    }
+
+    function stopGame() {
+      clearInterval(timer);
+      running = false;
+    }
+
+    function endHalfPrompt() {
+      stopGame();
+      const btn = document.createElement("button");
+      btn.className = "btn btn-dark circle-btn";
+      btn.textContent = currentHalf === "First Half" ? "End 1st" : (currentHalf === "Second Half" ? "End 2nd" : `End OT${currentOvertime}`);
+      btn.onclick = endHalf;
+      document.getElementById("endHalfBtnContainer").innerHTML = "";
+      document.getElementById("endHalfBtnContainer").appendChild(btn);
+    }
+
+    function endHalf() {
+      for (let i = 1; i <= 7; i++) {
+        logEvent(`Player ${i}`, "Play Time", playerTime[i] || 0);
+      }
+      document.getElementById("endHalfBtnContainer").innerHTML = "";
+      timeLeft = 1080;
+      updateTimerDisplay();
+      running = false;
+      activePlayers = [];
+      statMode = null;
+      subMode = false;
+      subOut = null;
+      for (let i = 1; i <= 7; i++) {
+        playerTime[i] = 0;
+      }
+
+      if (currentHalf === "First Half") {
+        setHalf("Second Half");
+      } else if (currentHalf === "Second Half") {
+        currentOvertime++;
+        currentHalf = `Overtime`;
+        document.getElementById("currentHalf").textContent = `${currentHalf} ${currentOvertime}`;
+      }
+
+      document.getElementById("courtStatus").textContent = "Select Starting 5";
+      document.querySelectorAll(".active-player").forEach(el => el.classList.remove("active-player"));
+      updateFoulTurnoverButtons();
+    }
+
+    function buildPlayerButtons() {
+      const div = document.getElementById("playerButtons");
+      for (let i = 1; i <= 7; i++) {
+        playerTime[i] = 0; fouls[i] = 0; turnovers[i] = 0;
+        const b = document.createElement("button");
+        b.id = "p" + i;
+        b.className = "btn btn-outline-dark circle-btn";
+        b.textContent = i;
+        b.onclick = () => togglePlayer(i);
+        div.appendChild(b);
+      }
+    }
+
+    // Init
+    updateTimerDisplay();
+    buildPlayerButtons();
+    updateFoulTurnoverButtons();
+    holdAdjust(document.getElementById("plusBtn"), 1);
+    holdAdjust(document.getElementById("minusBtn"), -1);
+  </script>
 </body>
 </html>
