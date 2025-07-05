@@ -74,29 +74,29 @@
 
       <!-- Points -->
       <div class="btn-group mt-3 flex-wrap">
-        <button class="btn btn-outline-success" onclick="recordPoint(1)">+1</button>
-        <button class="btn btn-outline-success" onclick="recordPoint(2)">+2</button>
-        <button class="btn btn-outline-success" onclick="recordPoint(3)">+3</button>
+        <button class="btn btn-outline-success" id="btn1">+1</button>
+        <button class="btn btn-outline-success" id="btn2">+2</button>
+        <button class="btn btn-outline-success" id="btn3">+3</button>
       </div>
 
       <!-- Misses -->
       <div class="btn-group mt-2 flex-wrap">
-        <button class="btn btn-outline-danger" onclick="recordMiss('Free Throw')">Free Throw</button>
-        <button class="btn btn-outline-danger" onclick="recordMiss('2 Point')">2</button>
-        <button class="btn btn-outline-danger" onclick="recordMiss('3 Point')">3</button>
+        <button class="btn btn-outline-danger" id="btnMissFT">Free Throw</button>
+        <button class="btn btn-outline-danger" id="btnMiss2">2</button>
+        <button class="btn btn-outline-danger" id="btnMiss3">3</button>
       </div>
     </div>
 
     <!-- Other Stats -->
     <div class="mt-4">
-      <button class="btn btn-success btn-block" onclick="recordSimple('Assist')">Assist</button>
-      <button class="btn btn-info btn-block" onclick="recordSimple('Offensive Rebound')">Offensive Rebound</button>
+      <button class="btn btn-success btn-block" id="btnAssist">Assist</button>
+      <button class="btn btn-info btn-block" id="btnRebound">Offensive Rebound</button>
     </div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec'; // Replace this
+      const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec'; // Replace with your real URL
       let currentPlayer = '';
       let shotAttemptActive = false;
       let shotTimeout;
@@ -147,26 +147,6 @@
         });
       }
 
-      function recordPoint(points) {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', `Made ${points} Point`, points);
-        resetShotState(`+${points} made`);
-      }
-
-      function recordMiss(type) {
-        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
-        clearTimeout(shotTimeout);
-        saveStat('Offensive', `Missed ${type}`, 0);
-        resetShotState(`${type} missed`);
-      }
-
-      function recordSimple(stat) {
-        if (!currentPlayer) return alert('Select a player first.');
-        saveStat('Offensive', stat, 1);
-        alert(`${stat} recorded for ${currentPlayer}`);
-      }
-
       function resetShotState(message = 'Shot Attempt ended') {
         shotAttemptActive = false;
         document.getElementById('shotStatus').textContent = message;
@@ -174,6 +154,61 @@
           document.getElementById('shotStatus').textContent = '';
         }, 3000);
       }
+
+      // Scoring Buttons
+      document.getElementById('btn1').addEventListener('click', () => {
+        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+        clearTimeout(shotTimeout);
+        saveStat('Offensive', 'Made 1 Point', 1);
+        resetShotState('+1 made');
+      });
+
+      document.getElementById('btn2').addEventListener('click', () => {
+        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+        clearTimeout(shotTimeout);
+        saveStat('Offensive', 'Made 2 Point', 2);
+        resetShotState('+2 made');
+      });
+
+      document.getElementById('btn3').addEventListener('click', () => {
+        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+        clearTimeout(shotTimeout);
+        saveStat('Offensive', 'Made 3 Point', 3);
+        resetShotState('+3 made');
+      });
+
+      // Missed Shot Buttons
+      document.getElementById('btnMissFT').addEventListener('click', () => {
+        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+        clearTimeout(shotTimeout);
+        saveStat('Offensive', 'Missed Free Throw', 0);
+        resetShotState('Free Throw missed');
+      });
+
+      document.getElementById('btnMiss2').addEventListener('click', () => {
+        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+        clearTimeout(shotTimeout);
+        saveStat('Offensive', 'Missed 2 Point', 0);
+        resetShotState('2 Point missed');
+      });
+
+      document.getElementById('btnMiss3').addEventListener('click', () => {
+        if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+        clearTimeout(shotTimeout);
+        saveStat('Offensive', 'Missed 3 Point', 0);
+        resetShotState('3 Point missed');
+      });
+
+      // Other Stats
+      document.getElementById('btnAssist').addEventListener('click', () => {
+        saveStat('Offensive', 'Assist', 1);
+        alert(`Assist recorded for ${currentPlayer}`);
+      });
+
+      document.getElementById('btnRebound').addEventListener('click', () => {
+        saveStat('Offensive', 'Offensive Rebound', 1);
+        alert(`Offensive Rebound recorded for ${currentPlayer}`);
+      });
     });
   </script>
 </body>
