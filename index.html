@@ -14,13 +14,14 @@
   <div class="text-center">
     <h2 class="mb-4">Basketball Stats</h2>
 
-    <button class="btn btn-primary"   onclick="saveStat('Offensive')">Offensive Stats</button><br>
+    <button class="btn btn-primary"  onclick="location.href='offensivestats.html'">Offensive Stats</button><br>
     <button class="btn btn-success"   onclick="saveStat('Defensive')">Defensive Stats</button><br>
     <button class="btn btn-secondary" onclick="saveStat('Support')">Support Stats</button>
   </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/PASTE_DEPLOYMENT_ID/exec';
+const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg
+/exec';
 
 async function saveStat(category){
   // ⚠️ For demo we only log the click itself.
