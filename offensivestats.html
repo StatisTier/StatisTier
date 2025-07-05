@@ -91,7 +91,7 @@
     </div>
   </div>
 
-  <!-- Working JS at end -->
+  <!-- Working script -->
   <script>
     const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
     let currentPlayer = '';
@@ -105,13 +105,13 @@
       button.addEventListener('click', () => {
         currentPlayer = button.dataset.player.trim();
         label.textContent = `${currentPlayer} selected`;
-
         playerButtons.forEach(btn => btn.classList.remove('active-player'));
         button.classList.add('active-player');
+        console.log(`✅ Player selected: ${currentPlayer}`);
       });
     });
 
-    // Handle action logging
+    // Handle stat button click
     actionButtons.forEach(button => {
       button.addEventListener('click', () => {
         if (!currentPlayer) {
@@ -129,6 +129,8 @@
           value
         };
 
+        console.log(`➡ Sending:`, payload);
+
         const form = new FormData();
         form.append('payload', JSON.stringify(payload));
 
@@ -138,10 +140,10 @@
         })
         .then(res => res.json())
         .then(json => {
-          console.log(`✅ ${stat} (${value}) logged for ${currentPlayer}`);
+          console.log(`✅ Logged: ${stat} (${value}) for ${currentPlayer}`);
         })
         .catch(err => {
-          console.error('❌ Failed:', err);
+          console.error('❌ Error logging stat:', err);
           alert('❌ Could not save stat.');
         });
       });
