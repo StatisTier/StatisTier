@@ -25,8 +25,7 @@
       <button class="btn btn-secondary" onclick="adjustTime(1)">+</button>
     </div>
 
-    <!-- Half selector -->
-    <div class="btn-group mb-1" role="group">
+    <div class="btn-group mb-1">
       <button id="firstHalfBtn"  class="btn btn-primary circle-btn"        onclick="setHalf('First Half')">1st</button>
       <button id="secondHalfBtn" class="btn btn-outline-primary circle-btn" onclick="setHalf('Second Half')">2nd</button>
     </div>
@@ -73,115 +72,104 @@
 const API='https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
 
 /* === STATE === */
-let timeLeft = 1080;           // 18:00 seconds
-let timer = null;
-let active    = [];            // players on court
-let playerTime={},fouls={},turnovers={};
-let gameStarted = false;
-let subMode     = false;
-let subOutPlayer= null;
-let statMode    = null;
-let selectedHalf= 'First Half'; // default highlighted
+let timeLeft = 1080;           // 18:00
+let timer=null,active=[],playerTime={},fouls={},turnovers={};
+let gameStarted=false,subMode=false,subOutPlayer=null,statMode=null;
+let selectedHalf='First Half';
 
-/* === TIMER FUNCTIONS === */
-function updateClock(){
-  const m=Math.floor(timeLeft/60),s=timeLeft%60;
-  document.getElementById('timerDisplay').textContent=`${m}:${s<10?'0'+s:s}`;
-}
-function adjustTime(d){timeLeft=Math.max(0,timeLeft+d);updateClock();}
+/* === CLOCK === */
+function updateClock(){const m=Math.floor(timeLeft/60),s=timeLeft%60;
+  document.getElementById('timerDisplay').textContent=`${m}:${s<10?'0'+s:s}`;}
+function adjustTime(d){if(!gameStarted){timeLeft=Math.max(0,timeLeft+d);updateClock();}}
 
-/* === HALF SELECTOR === */
-function setHalf(half){
-  if(gameStarted) return;                // locked once game starts
-  selectedHalf = half;
-  document.getElementById('firstHalfBtn').className =
-    half==='First Half' ? 'btn btn-primary circle-btn' : 'btn btn-outline-primary circle-btn';
-  document.getElementById('secondHalfBtn').className =
-    half==='Second Half'? 'btn btn-primary circle-btn' : 'btn btn-outline-primary circle-btn';
-  document.getElementById('currentHalf').textContent = half;
+/* === HALF SELECT === */
+function setHalf(h){
+  if(gameStarted) return;
+  selectedHalf=h;
+  document.getElementById('firstHalfBtn').className=
+    h==='First Half'?'btn btn-primary circle-btn':'btn btn-outline-primary circle-btn';
+  document.getElementById('secondHalfBtn').className=
+    h==='Second Half'?'btn btn-primary circle-btn':'btn btn-outline-primary circle-btn';
+  document.getElementById('currentHalf').textContent=h;
 }
 
-/* === PLAYER GRID === */
+/* === PLAYER GRID & SUBS === */
 function togglePlayer(n){
   const btn=document.getElementById(`p${n}`);
-  if(!gameStarted){   // pre-game starting five selection
-      const i=active.indexOf(n);
-      if(i===-1 && active.length<5){active.push(n);btn.classList.add('btn-success');}
-      else if(i!==-1){active.splice(i,1);btn.classList.remove('btn-success');}
-  }else if(subMode){  // in-game sub flow
+  if(!gameStarted){
       const idx=active.indexOf(n);
-      if(subOutPlayer===null && idx!==-1){          // first tap → sub out
+      if(idx===-1&&active.length<5){active.push(n);btn.classList.add('btn-success');}
+      else if(idx!==-1){active.splice(idx,1);btn.classList.remove('btn-success');}
+  }else if(subMode){
+      const idx=active.indexOf(n);
+      if(subOutPlayer===null && idx!==-1){             // Sub out
           subOutPlayer=n;btn.classList.add('btn-danger');
-          logEvent(`Player ${n}`,'Sub Out');
-      }else if(subOutPlayer!==null && idx===-1){    // second tap → sub in
+          logEvent(`Player ${n}`,'Sub Out');           // separate log
+      }else if(subOutPlayer!==null && idx===-1){       // Sub in
           document.getElementById(`p${subOutPlayer}`).classList.remove('btn-danger','btn-success');
           active.splice(active.indexOf(subOutPlayer),1);
-          active.push(n);
-          btn.classList.add('btn-success');
-          logEvent(`Player ${n}`,'Sub In');
+          active.push(n);btn.classList.add('btn-success');
+          logEvent(`Player ${n}`,'Sub In');            // separate log
           subOutPlayer=null;subMode=false;
       }
   }
 }
 
-/* === FOUL / TURNOVER === */
+/* === STAT MODE === */
 function setStatType(t){statMode=t;}
 function statAction(n){
-  if (!gameStarted || !statMode) return;         // must be in-game + a mode picked
-  if (active.indexOf(n) === -1) return;          // ignore if player is NOT on court
+  if(!gameStarted||!statMode) return;
+  const onCourt=document.getElementById('p'+n).classList.contains('btn-success');
+  if(!onCourt) return;  // ignore bench clicks
 
-  if (statMode === 'Foul')     fouls[n]++;       // update local counters
-  if (statMode === 'Turnover') turnovers[n]++;
-
-  logEvent(`Player ${n}`, statMode);             // log to sheet
-  document.getElementById('logMsg').textContent =
-      `${statMode} on Player ${n}`;
-  setTimeout(() => document.getElementById('logMsg').textContent = '', 2000);
+  if(statMode==='Foul') fouls[n]++; else turnovers[n]++;
+  logEvent(`Player ${n}`,statMode);
+  document.getElementById('logMsg').textContent=`${statMode} on Player ${n}`;
+  setTimeout(()=>document.getElementById('logMsg').textContent='',2000);
 }
 
-/* === LOGGING === */
+/* === LOG === */
 function logEvent(player,stat,val=1){
   const payload={category:'GameManager',player,stat,value:val,
-    clock:document.getElementById('timerDisplay').textContent,half:selectedHalf};
+                 clock:document.getElementById('timerDisplay').textContent,
+                 half:selectedHalf};
   const fd=new FormData();fd.append('payload',JSON.stringify(payload));
   fetch(API,{method:'POST',body:fd}).catch(console.error);
 }
 
-/* === UI GENERATION === */
-function createUI(){
+/* === UI BUILD === */
+function buildUI(){
   const pDiv=document.getElementById('playerButtons'),
         sDiv=document.getElementById('statPlayerButtons');
   for(let i=1;i<=7;i++){
-      playerTime[i]=fouls[i]=turnovers[i]=0;
-      const p=document.createElement('button');
-      p.id=`p${i}`;p.className='btn btn-outline-dark circle-btn';p.textContent=i;
-      p.onclick=()=>togglePlayer(i);pDiv.appendChild(p);
+    playerTime[i]=fouls[i]=turnovers[i]=0;
+    const b=document.createElement('button');
+    b.id=`p${i}`;b.className='btn btn-outline-dark circle-btn';b.textContent=i;
+    b.onclick=()=>togglePlayer(i);pDiv.appendChild(b);
 
-      const sp=document.createElement('button');
-      sp.className='btn btn-outline-dark circle-btn';sp.textContent=i;
-      sp.onclick=()=>statAction(i);sDiv.appendChild(sp);
+    const sb=document.createElement('button');
+    sb.className='btn btn-outline-dark circle-btn';sb.textContent=i;
+    sb.onclick=()=>statAction(i);sDiv.appendChild(sb);
   }
 }
 
 /* === START / STOP === */
 document.getElementById('startBtn').onclick=()=>{
   if(active.length===5&&!gameStarted){
-      // log starting five
-      active.forEach(p=>logEvent(`Player ${p}`,'Starting Five'));
-      gameStarted=true;
-      document.getElementById('courtStatus').textContent='Players On Court';
-      document.getElementById('statsSection').style.display='block';
-      // lock half buttons
-      document.getElementById('firstHalfBtn').disabled=true;
-      document.getElementById('secondHalfBtn').disabled=true;
-      timer=setInterval(()=>{if(timeLeft>0){timeLeft--;updateClock();active.forEach(p=>playerTime[p]++)}},1000);
+     active.forEach(p=>logEvent(`Player ${p}`,'Starting Five'));  // individual entries
+     gameStarted=true;
+     document.getElementById('courtStatus').textContent='Players On Court';
+     document.getElementById('statsSection').style.display='block';
+     document.getElementById('firstHalfBtn').disabled=true;
+     document.getElementById('secondHalfBtn').disabled=true;
+     timer=setInterval(()=>{if(timeLeft>0){timeLeft--;updateClock();}},1000);
   }
 };
-document.getElementById('stopBtn').onclick=()=>{clearInterval(timer);isRunning=false;};
-document.getElementById('subBtn').onclick=()=>{if(gameStarted)subMode=true;};
+document.getElementById('stopBtn').onclick=()=>{clearInterval(timer);};
+document.getElementById('subBtn').onclick=()=>{if(gameStarted) subMode=true;};
 
 /* === INIT === */
-createUI();updateClock();setHalf('First Half');
+buildUI();updateClock();setHalf('First Half');
 </script>
 </body>
 </html>
