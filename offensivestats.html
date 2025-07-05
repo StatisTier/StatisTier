@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Offensive Stats</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; padding: 24px; }
+    .btn-block { width: 100%; margin-top: 10px; }
+    .btn-group > button { margin: 6px; }
+    .section { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h3 class="text-center mb-4">Offensive Stats</h3>
+
+    <!-- Player Name -->
+    <div class="mb-3">
+      <label for="playerName" class="form-label">Player Name</label>
+      <input type="text" id="playerName" class="form-control" placeholder="Enter player name" />
+    </div>
+
+    <!-- Shot Attempt -->
+    <div class="section text-center">
+      <button id="shotAttemptBtn" class="btn btn-warning btn-block">Shot Attempt</button>
+      <p class="mt-2 text-muted" id="shotStatus"></p>
+
+      <!-- Points -->
+      <div class="btn-group">
+        <button class="btn btn-outline-success" onclick="recordPoint(1)">+1</button>
+        <button class="btn btn-outline-success" onclick="recordPoint(2)">+2</button>
+        <button class="btn btn-outline-success" onclick="recordPoint(3)">+3</button>
+      </div>
+
+      <!-- Misses -->
+      <div class="btn-group">
+        <button class="btn btn-outline-danger" onclick="recordMiss('Free Throw')">Free Throw</button>
+        <button class="btn btn-outline-danger" onclick="recordMiss('2 Point')">2</button>
+        <button class="btn btn-outline-danger" onclick="recordMiss('3 Point')">3</button>
+      </div>
+    </div>
+
+    <!-- Other stats -->
+    <div class="section text-center">
+      <button class="btn btn-success btn-block" onclick="recordSimple('Assist')">Assist</button>
+      <button class="btn btn-info btn-block" onclick="recordSimple('Offensive Rebound')">Offensive Rebound</button>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg
+/exec';
+    let shotAttemptActive = false;
+    let shotTimeout;
+
+    function getPlayerName() {
+      const name = document.getElementById('playerName').value.trim();
+      if (!name) alert('Please enter the player name.');
+      return name;
+    }
+
+    function saveStat(category, stat, value = '') {
+      const player = getPlayerName();
+      if (!player) return;
+
+      const payload = {
+        category,
+        player,
+        stat,
+        value
+      };
+
+      fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        console.log(`${stat} recorded`);
+      }).catch((err) => {
+        console.error('Error:', err);
+      });
+    }
+
+    document.getElementById('shotAttemptBtn').addEventListener('click', () => {
+      if (shotAttemptActive) return;
+
+      shotAttemptActive = true;
+      document.getElementById('shotStatus').textContent = 'Shot Attempt started...';
+
+      shotTimeout = setTimeout(() => {
+        resetShotState('Shot attempt expired (no action)');
+      }, 3000); // 3 seconds
+    });
+
+    function recordPoint(points) {
+      if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+      clearTimeout(shotTimeout);
+      saveStat('Offensive', `Made ${points} Point`, points);
+      resetShotState(`+${points} made`);
+    }
+
+    function recordMiss(type) {
+      if (!shotAttemptActive) return alert('Press Shot Attempt first.');
+      clearTimeout(shotTimeout);
+      saveStat('Offensive', `Missed ${type}`, 0);
+      resetShotState(`${type} missed`);
+    }
+
+    function recordSimple(stat) {
+      saveStat('Offensive', stat, 1);
+      alert(`${stat} recorded`);
+    }
+
+    function resetShotState(message = 'Shot Attempt ended') {
+      shotAttemptActive = false;
+      document.getElementById('shotStatus').textContent = message;
+      setTimeout(() => {
+        document.getElementById('shotStatus').textContent = '';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
