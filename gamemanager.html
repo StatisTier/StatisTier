@@ -74,13 +74,27 @@ function adjustTime(d){timeLeft=Math.max(0,timeLeft+d);updateClock()}
 function updateClock(){const m=Math.floor(timeLeft/60),s=timeLeft%60;
   document.getElementById("timerDisplay").textContent=`${m}:${s<10?"0"+s:s}`}
 
-document.getElementById("startBtn").onclick=()=>{
-  if(active.length===5&&!gameStarted){gameStarted=true;
-    document.getElementById("courtStatus").textContent="Players On Court";
-    document.getElementById("statsSection").style.display="block";
-    timer=setInterval(()=>{if(timeLeft>0){timeLeft--;updateClock();active.forEach(p=>playerTime[p]++)}},1000);
+document.getElementById("startBtn").onclick = () => {
+  if (active.length === 5 && !gameStarted) {
+    gameStarted = true;
+    document.getElementById("courtStatus").textContent = "Players On Court";
+    document.getElementById("statsSection").style.display = "block";
+
+    // Log each starting five player
+    active.forEach(p => {
+      logEvent(`Player ${p}`, 'Starting Five');
+    });
+
+    timer = setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateClock();
+        active.forEach(p => playerTime[p]++);
+      }
+    }, 1000);
   }
 };
+
 document.getElementById("stopBtn").onclick=()=>{clearInterval(timer);isRunning=false};
 
 function activateSubMode(){if(gameStarted)subMode=true}
