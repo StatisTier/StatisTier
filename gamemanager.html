@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .circle-btn {
+      margin: 5px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      line-height: 46px;
+      padding: 0;
+    }
+    .player-time {
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .stat-count {
+      font-size: 0.75rem;
+      color: #333;
+      margin-top: 4px;
+    }
+    #timerDisplay {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="text-center mb-4">Game Manager</h2>
+
+    <div class="text-center mb-4">
+      <div id="timerDisplay">12:00</div>
+      <select id="timerSelect" class="form-select mb-2" style="max-width: 150px; margin: 0 auto;">
+        <option value="600">10 Min</option>
+        <option value="720" selected>12 Min</option>
+        <option value="1200">20 Min</option>
+      </select>
+      <div class="btn-group">
+        <button id="startBtn" class="btn btn-success">Start</button>
+        <button id="stopBtn" class="btn btn-danger">Stop</button>
+      </div>
+    </div>
+
+    <div class="mb-4 text-center">
+      <h5>Select Starting 5</h5>
+      <div id="playerButtons" class="d-flex flex-wrap justify-content-center"></div>
+    </div>
+
+    <div class="text-center mb-4">
+      <h5>Substitution</h5>
+      <button class="btn btn-primary" onclick="substitutePlayer()">Sub In / Out</button>
+    </div>
+
+    <div class="text-center mb-4">
+      <h5>Fouls & Turnovers</h5>
+      <div id="statButtons" class="d-flex flex-wrap justify-content-center"></div>
+    </div>
+
+    <div class="text-center mb-3">
+      <h5>Timeouts</h5>
+      <button class="btn btn-warning mx-2" onclick="logTimeout('My Team')">My Team</button>
+      <button class="btn btn-secondary mx-2" onclick="logTimeout('Opponent')">Opponent</button>
+    </div>
+
+    <div id="logArea" class="text-center text-success fw-semibold mt-3"></div>
+  </div>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxgYEwR_vX3EN7ch0Sr8g4qGZSl23guIT-QrWswKn90EDNaW3c6BedltZT2AF6ldiLFsg/exec';
+
+    let timer;
+    let timeLeft = 720;
+    let isRunning = false;
+    let activePlayers = [];
+    let playerTimes = {};
+    let fouls = {};
+    let turnovers = {};
+
+    function updateTimerDisplay() {
+      const min = Math.floor(timeLeft / 60);
+      const sec = timeLeft % 60;
+      document.getElementById("timerDisplay").textContent = min + ":" + (sec < 10 ? "0" + sec : sec);
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+      isRunning = true;
+      timer = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateTimerDisplay();
+          activePlayers.forEach(p => playerTimes[p]++);
+          updatePlayerInfo();
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timer);
+      isRunning = false;
+    }
+
+    function togglePlayer(num) {
+      const idx = activePlayers.indexOf(num);
+      if (idx === -1) {
+        if (activePlayers.length >= 5) {
+          alert("Only 5 players allowed on court");
+          return;
+        }
+        activePlayers.push(num);
+        document.getElementById("btn-" + num).classList.add("btn-success");
+      } else {
+        activePlayers.splice(idx, 1);
+        document.getElementById("btn-" + num).classList.remove("btn-success");
+      }
+      updatePlayerInfo();
+    }
+
+    function substitutePlayer() {
+      const sub = prompt("Enter player number to sub in/out:");
+      const num = parseInt(sub);
+      if (!isNaN(num) && playerTimes.hasOwnProperty(num)) togglePlayer(num);
+    }
+
+    function updatePlayerInfo() {
+      Object.keys(playerTimes).forEach(p => {
+        const time = Math.floor(playerTimes[p] / 60) + "m " + (playerTimes[p] % 60) + "s";
+        document.getElementById("time-" + p).textContent = time;
+        document.getElementById("foul-" + p).textContent = "F: " + fouls[p];
+        document.getElementById("to-" + p).textContent = "TO: " + turnovers[p];
+      });
+    }
+
+    function addFoul(p) {
+      fouls[p]++;
+      updatePlayerInfo();
+      logEvent("Player " + p, "Foul", 1);
+    }
+
+    function addTurnover(p) {
+      turnovers[p]++;
+      updatePlayerInfo();
+      logEvent("Player " + p, "Turnover", 1);
+    }
+
+    function logTimeout(team) {
+      logEvent(team, "Timeout", 1);
+      document.getElementById("logArea").textContent = team + " timeout taken.";
+      setTimeout(() => document.getElementById("logArea").textContent = "", 3000);
+    }
+
+    function logEvent(player, stat, value) {
+      const payload = {
+        category: "GameManager",
+        player,
+        stat,
+        value,
+        clock: document.getElementById("timerDisplay").textContent
+      };
+
+      const form = new FormData();
+      form.append("payload", JSON.stringify(payload));
+
+      fetch(API, {
+        method: "POST",
+        body: form
+      }).then(res => res.json())
+        .then(() => console.log("✅ Logged to sheet:", payload))
+        .catch(err => console.error("❌ Failed to log:", err));
+    }
+
+    function generateUI() {
+      const playerContainer = document.getElementById("playerButtons");
+      const statContainer = document.getElementById("statButtons");
+      for (let i = 1; i <= 7; i++) {
+        playerTimes[i] = 0;
+        fouls[i] = 0;
+        turnovers[i] = 0;
+
+        const btn = document.createElement("button");
+        btn.id = "btn-" + i;
+        btn.className = "btn btn-outline-dark circle-btn";
+        btn.textContent = i;
+        btn.onclick = () => togglePlayer(i);
+        playerContainer.appendChild(btn);
+
+        const time = document.createElement("div");
+        time.id = "time-" + i;
+        time.className = "player-time";
+        playerContainer.appendChild(time);
+
+        const foulBtn = document.createElement("button");
+        foulBtn.className = "btn btn-warning m-1";
+        foulBtn.textContent = "Foul " + i;
+        foulBtn.onclick = () => addFoul(i);
+        statContainer.appendChild(foulBtn);
+
+        const foulStat = document.createElement("div");
+        foulStat.id = "foul-" + i;
+        foulStat.className = "stat-count";
+        foulStat.textContent = "F: 0";
+        statContainer.appendChild(foulStat);
+
+        const toBtn = document.createElement("button");
+        toBtn.className = "btn btn-danger m-1";
+        toBtn.textContent = "TO " + i;
+        toBtn.onclick = () => addTurnover(i);
+        statContainer.appendChild(toBtn);
+
+        const toStat = document.createElement("div");
+        toStat.id = "to-" + i;
+        toStat.className = "stat-count";
+        toStat.textContent = "TO: 0";
+        statContainer.appendChild(toStat);
+      }
+    }
+
+    document.getElementById("timerSelect").onchange = function () {
+      timeLeft = parseInt(this.value);
+      updateTimerDisplay();
+    };
+    document.getElementById("startBtn").onclick = startTimer;
+    document.getElementById("stopBtn").onclick = stopTimer;
+
+    generateUI();
+    updateTimerDisplay();
+  </script>
+</body>
+</html>
